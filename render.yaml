@@ -21,14 +21,12 @@ services:
   - type: redis
     name: utsavam-redis
     plan: free
-    properties:
-      ipAllowList: []
+    ipAllowList: []
 
 databases:
   - name: utsavam-postgres
     plan: free
-    properties:
-      databaseName: utsavam_dev
-      ipAllowList: []
+    databaseName: utsavam_dev
+    ipAllowList: []
 
 
