@@ -9,7 +9,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://utsavam:utsavam_pass@postgres:5433/utsavam_dev
+      - DATABASE_URL=postgresql+asyncpg://utsavam:utsavam_pass@postgres:5432/utsavam_dev
       - REDIS_URL=redis://redis:6379/0
       - ADMIN_KEY=${ADMIN_KEY:-change_me_admin_key}
     depends_on:

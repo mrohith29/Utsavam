@@ -5,8 +5,7 @@ services:
     plan: free
     envVars:
       - key: DATABASE_URL
-        fromService:
-          type: pgbouncer
+        fromDatabase:
           name: utsavam-postgres
           property: connectionString
       - key: REDIS_URL
@@ -19,15 +18,17 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
 
-  - type: pserv
+  - type: postgres
     name: utsavam-postgres
     plan: free
-    runtime: postgres
-    databaseName: utsavam_dev
-    ipAllowList: []
+    properties:
+      databaseName: utsavam_dev
+      ipAllowList: []
 
   - type: redis
     name: utsavam-redis
-    ipAllowList: []
+    plan: free
+    properties:
+      ipAllowList: []
 
 

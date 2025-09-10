@@ -30,25 +30,18 @@ pip install -r requirements.txt
 
 ---
 
-## 3. Start Postgres & Redis with Docker
+## 3. Start services locally with Docker Compose
 
-Run containers locally:
-
-```bash
-# PostgreSQL
-docker run --name utsavam-postgres -e POSTGRES_USER=utsavam \
-  -e POSTGRES_PASSWORD=utsavam_pass -e POSTGRES_DB=utsavam_dev \
-  -p 5433:5432 -d postgres:15
-
-# Redis
-docker run --name utsavam-redis -p 6379:6379 -d redis:7
-```
-
-Check they’re running:
+Use the provided `docker-compose.yml` to run API + Postgres + Redis:
 
 ```bash
-docker ps
+docker compose up --build
 ```
+
+This starts:
+- API: http://localhost:8000
+- Postgres: localhost:5433 (db=utsavam_dev, user=utsavam, pass=utsavam_pass)
+- Redis: localhost:6379
 
 ---
 
@@ -182,14 +175,27 @@ docker exec -it utsavam-redis redis-cli SET "event:1:tokens" 5
 
 ---
 
-## 11. Deployment
+## 11. Deployment (Render)
 
-When ready to deploy (e.g., Railway/Render/Heroku):
+Use the Blueprint `render.yaml` in the repo root:
 
-* Provision Postgres + Redis services in your platform.
-* Set env vars (`DATABASE_URL`, `REDIS_URL`, `ADMIN_KEY`).
-* Run migrations (`alembic upgrade head`).
-* Start the app with `uvicorn backend.app.main:app`.
+1. Push repo to GitHub.
+2. In Render, New → Blueprint → select this repo.
+3. Render provisions:
+   - Web service running Uvicorn
+   - Managed Postgres (connection wired to `DATABASE_URL`)
+   - Managed Redis (connection wired to `REDIS_URL`)
+4. Start command used by the service:
+
+```
+uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+```
+
+On first deploy, if using Alembic migrations, run:
+
+```bash
+alembic upgrade head
+```
 
 ---
 
