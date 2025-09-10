@@ -146,6 +146,16 @@ def require_admin(x_admin_key: Optional[str] = Header(None)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="admin auth required")
 
 
+@admin_router.get("/users", response_model=List[UserOut])
+async def admin_list_users(limit: int = 100, session: AsyncSession = Depends(get_session), _=Depends(require_admin)):
+    """
+    Admin endpoint to list all users in the database.
+    """
+    res = await session.execute(select(User).order_by(User.created_at.desc()).limit(limit))
+    users = res.scalars().all()
+    return users
+
+
 @admin_router.post("/events", response_model=EventOut, status_code=status.HTTP_201_CREATED)
 async def create_event(payload: EventCreate, session: AsyncSession = Depends(get_session), _=Depends(require_admin)):
     async with session.begin():
