@@ -18,17 +18,17 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
 
-  - type: postgres
-    name: utsavam-postgres
-    plan: free
-    properties:
-      databaseName: utsavam_dev
-      ipAllowList: []
-
   - type: redis
     name: utsavam-redis
     plan: free
     properties:
+      ipAllowList: []
+
+databases:
+  - name: utsavam-postgres
+    plan: free
+    properties:
+      databaseName: utsavam_dev
       ipAllowList: []
 
 
