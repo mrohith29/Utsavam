@@ -76,3 +76,14 @@ async def init_tokens_for_event(event_id: int, count: int) -> None:
     except Exception as exc:
         logging.exception("Redis error in init_tokens_for_event: %s", exc)
         # best-effort; swallow
+
+async def delete_tokens_for_event(event_id: int) -> None:
+    """
+    Delete the token key for an event (best-effort cleanup when deleting events).
+    """
+    key = f"event:{event_id}:tokens"
+    try:
+        await redis.delete(key)
+    except Exception as exc:
+        logging.exception("Redis error in delete_tokens_for_event: %s", exc)
+        # best-effort; swallow

@@ -9,16 +9,17 @@ if BACKEND_ROOT not in sys.path:
     sys.path.insert(0, BACKEND_ROOT)
 
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Header, status
-from pydantic import BaseModel, Field
-from datetime import datetime
+from pydantic import BaseModel, Field, EmailStr
+from datetime import datetime, timedelta
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete as sqla_delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.db import get_session
 from app.routes.booking import router as bookings_router
 from app.models import Event, User, Booking
-from app.redis_tools import init_tokens_for_event
+from app.redis_tools import init_tokens_for_event, delete_tokens_for_event
 from app.db import engine
 from app.models import Base
 
@@ -55,6 +56,51 @@ class EventOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+
+
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+    name: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+@app.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+async def register_user(payload: UserCreate, session: AsyncSession = Depends(get_session)):
+    # Normalize simple fields
+    email = payload.email.strip().lower()
+    name = (payload.name.strip() if payload.name else None)
+
+    # Fast pre-check to provide nicer error, then rely on unique index for races
+    existing = await session.execute(select(User).where(User.email == email))
+    if existing.scalars().first():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="email already registered")
+
+    # End any implicit transaction started by the pre-check SELECT before starting an explicit one
+    try:
+        await session.rollback()
+    except Exception:
+        pass
+
+    try:
+        async with session.begin():
+            user = User(email=email, name=name)
+            session.add(user)
+            # Ensure DB defaults (e.g., created_at) are loaded
+            await session.flush()
+            await session.refresh(user)
+            return user
+    except IntegrityError:
+        # Handle race: another request inserted same email between pre-check and commit
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="email already registered")
 
 
 @app.get("/events", response_model=List[EventOut])
@@ -179,59 +225,40 @@ async def seed_demo(session: AsyncSession = Depends(get_session), _=Depends(requ
 
     demo_users = [("alice@example.com", "Alice"), ("bob@example.com", "Bob"), ("carol@example.com", "Carol")]
     now = datetime.utcnow()
-    demo_events = [
-        {"name": "Indie Concert", "venue": "Stadium A", "start_at": now, "capacity": 5},
-        {"name": "Tech Talk", "venue": "Hall B", "start_at": now, "capacity": 50},
-        {"name": "Art Expo", "venue": "Gallery C", "start_at": now, "capacity": 100},
-    ]
+    demo_events = []
 
-    created_users = []
-    created_events = []
+    # Ensure no implicit transaction before starting an explicit one
+    try:
+        await session.rollback()
+    except Exception:
+        pass
 
     try:
-        # Create missing users
+        # Create any missing users/events
         async with session.begin():
             for email, name in demo_users:
-                q = select(User).where(User.email == email)
-                res = await session.execute(q)
-                existing = res.scalars().first()
-                if not existing:
-                    u = User(email=email, name=name)
-                    session.add(u)
-                    created_users.append(email)
+                res = await session.execute(select(User).where(User.email == email))
+                if not res.scalars().first():
+                    session.add(User(email=email, name=name))
             await session.flush()
 
-            # Create missing events
             for ev in demo_events:
-                q = select(Event).where(Event.name == ev["name"])
-                res = await session.execute(q)
-                existing = res.scalars().first()
-                if not existing:
-                    e = Event(
-                        name=ev["name"],
-                        venue=ev["venue"],
-                        start_at=ev["start_at"],
-                        capacity=ev["capacity"],
-                        seats_available=ev["capacity"],
-                        version=0,
+                res = await session.execute(select(Event).where(Event.name == ev["name"]))
+                if not res.scalars().first():
+                    session.add(
+                        Event(
+                            name=ev["name"],
+                            venue=ev["venue"],
+                            start_at=ev["start_at"],
+                            capacity=ev["capacity"],
+                            seats_available=ev["capacity"],
+                            version=0,
+                        )
                     )
-                    session.add(e)
-                    created_events.append(ev["name"])
             await session.flush()
     except IntegrityError:
-        # Race or duplicate insertion — rollback and re-query to build response
+        # If any race happened, rollback and proceed to compute presence lists
         await session.rollback()
-        # re-query current DB state for users/events
-        created_users = []
-        created_events = []
-        for email, _ in demo_users:
-            res = await session.execute(select(User).where(User.email == email))
-            if res.scalars().first():
-                created_users.append(email)
-        for ev in demo_events:
-            res = await session.execute(select(Event).where(Event.name == ev["name"]))
-            if res.scalars().first():
-                created_events.append(ev["name"])
 
     # Initialize redis tokens for events that exist (best-effort)
     # We query events by name so we have the DB ids.
@@ -241,13 +268,26 @@ async def seed_demo(session: AsyncSession = Depends(get_session), _=Depends(requ
         if not e_obj:
             continue
         try:
-            # init_tokens_for_event overwrites or sets the key to seats_available
             await init_tokens_for_event(e_obj.id, e_obj.seats_available)
         except Exception:
-            # best-effort: do not fail seed because Redis is down
             pass
 
-    return {"users_present_or_created": created_users, "events_present_or_created": created_events}
+    # Build idempotent response: list everything that is present (created now or previously)
+    users_present_or_created: list[str] = []
+    events_present_or_created: list[str] = []
+    for email, _ in demo_users:
+        res = await session.execute(select(User).where(User.email == email))
+        if res.scalars().first():
+            users_present_or_created.append(email)
+    for ev in demo_events:
+        res = await session.execute(select(Event).where(Event.name == ev["name"]))
+        if res.scalars().first():
+            events_present_or_created.append(ev["name"])
+
+    return {
+        "users_present_or_created": users_present_or_created,
+        "events_present_or_created": events_present_or_created,
+    }
 
 
 ## moved to bottom after admin routes are defined
@@ -378,6 +418,34 @@ async def analytics(session: AsyncSession = Depends(get_session), _=Depends(requ
 
     return {"total_confirmed_bookings": total_bookings, "events": events}
 
+
+
+
+# Admin: Delete an event (and its bookings via FK cascade)
+@admin_router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_event(event_id: int, session: AsyncSession = Depends(get_session), _=Depends(require_admin)):
+    # Best-effort Redis cleanup first (outside transaction is fine)
+    try:
+        await delete_tokens_for_event(event_id)
+    except Exception:
+        pass
+
+    async with session.begin():
+        # Lock and verify event exists
+        chk = await session.execute(select(Event.id).where(Event.id == event_id).with_for_update())
+        if chk.scalar() is None:
+            raise HTTPException(status_code=404, detail="event not found")
+
+        # Delete dependent bookings explicitly (defensive in case FK cascade is missing)
+        await session.execute(sqla_delete(Booking).where(Booking.event_id == event_id))
+
+        # Delete the event
+        result = await session.execute(sqla_delete(Event).where(Event.id == event_id))
+        if getattr(result, "rowcount", 0) < 1:
+            # Should not happen since we locked and confirmed existence
+            raise HTTPException(status_code=500, detail="failed to delete event")
+    # 204 No Content
+    return None
 
 # Register admin routes after all admin endpoints are defined
 app.include_router(admin_router)

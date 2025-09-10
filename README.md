@@ -23,7 +23,7 @@ Install:
 ## 2. Clone and install dependencies
 
 ```bash
-git clone https://github.com/<your-username>/Utsavam.git
+git clone https://github.com/mrohith29/Utsavam.git
 cd Utsavam
 pip install -r requirements.txt
 ```
@@ -65,7 +65,7 @@ Ensure it contains:
 ```
 DATABASE_URL=postgresql+asyncpg://utsavam:utsavam_pass@localhost:5433/utsavam_dev
 REDIS_URL=redis://localhost:6379/0
-$env:DATABASE_URL="postgresql+psycopg2://utsavam:utsavam_pass@localhost:5433/utsavam_dev"
+uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
 $env:DATABASE_URL = "postgresql+asyncpg://utsavam:utsavam_pass@localhost:5433/utsavam_dev"
 $env:REDIS_URL="redis://localhost:6379/0"
 
