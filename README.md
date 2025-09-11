@@ -10,6 +10,12 @@ Built with **FastAPI**, **SQLAlchemy (async)**, **PostgreSQL**, and **Redis**.
 
 ---
 
+## Docs
+- Design document: `docs/DESIGN.md`
+- OpenAPI spec: `docs/OPENAPI.yaml`
+
+---
+
 ## 1. Prerequisites
 
 Install:
@@ -125,11 +131,20 @@ Visit Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
   POST /bookings   { "user_id": 1, "event_id": 1, "seats": 1 }
   DELETE /bookings/{booking_id}
   ```
+* **User history**
+
+  ```
+  GET /users/{user_id}/bookings
+  ```
 * **Admin (requires `X-Admin-Key` header)**
 
   ```
+  GET /admin/users
   POST /admin/events
   PUT /admin/events/{id}
+  GET /admin/events/{id}/bookings
+  GET /admin/analytics
+  DELETE /admin/events/{id}
   POST /admin/seed_demo_data
   ```
 
@@ -146,9 +161,9 @@ python tests/concurrency_test.py
 * Simulates 50 concurrent booking requests for the same event.
 * Expected outcome (if event capacity = 5):
 
-  ```
-  total: 50 success: 5 conflict: 45 errors: 0
-  ```
+```
+total: 50 success: 5 conflict: 45 errors: 0
+```
 
 ---
 
@@ -175,23 +190,21 @@ docker exec -it utsavam-redis redis-cli SET "event:1:tokens" 5
 
 ---
 
-## 11. Deployment (Render)
+## 11. Deployment
 
-Use the Blueprint `render.yaml` in the repo root:
+- Live API base URL: <add your deployed URL here>
+- Swagger UI (live): <add link>
+- Video walkthrough: <add link>
 
-1. Push repo to GitHub.
-2. In Render, New → Blueprint → select this repo.
-3. Render provisions:
-   - Web service running Uvicorn
-   - Managed Postgres (connection wired to `DATABASE_URL`)
-   - Managed Redis (connection wired to `REDIS_URL`)
-4. Start command used by the service:
+Suggested platform: Render/Railway/Heroku with managed Postgres & Redis.
+
+Start command:
 
 ```
 uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-On first deploy, if using Alembic migrations, run:
+Run migrations on first deploy:
 
 ```bash
 alembic upgrade head
@@ -204,7 +217,3 @@ alembic upgrade head
 * You can browse events via Swagger.
 * Book tickets safely under concurrency load.
 * Admins can create/update events and seed demo data.
-
----
-
-Would you like me to also write a **step-by-step walkthrough of testing bookings using Swagger UI** (screenshots + input examples), so you can use it as part of this documentation for teammates?
