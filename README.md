@@ -6,13 +6,13 @@ This project implements a scalable backend for **Utsavam**, an event ticketing p
 * Admins: manage events, view analytics, seed demo data.
 * Concurrency-safe booking using **PostgreSQL row locks** and a **Redis token bucket** to prevent overselling.
 
-Built with **FastAPI**, **SQLAlchemy (async)**, **PostgreSQL**, and **Redis**.
+Built with **FastAPI**, **SQLAlchemy (async)**, **PostgreSQL**, and **Redis (async)**, **Alembic**, and **Uvicorn**.
 
 ---
 
 ## Docs
-- Design document: `docs/DESIGN.md`
-- OpenAPI spec: `docs/OPENAPI.yaml`
+- OpenAPI spec: [docs/OPENAPI.yaml](https://github.com/mrohith29/Utsavam/blob/main/docs/OPENAPI.yaml)
+- Schema: [docs/SCHEMA.sql](https://github.com/mrohith29/Utsavam/blob/main/docs/SCHEMA.sql)
 
 ---
 
@@ -22,7 +22,6 @@ Install:
 
 * [Docker](https://www.docker.com/) (for Postgres + Redis)
 * [Python 3.11+](https://www.python.org/downloads/)
-* [Poetry](https://python-poetry.org/) or `pip` for dependencies
 
 ---
 
@@ -46,7 +45,7 @@ docker compose up --build
 
 This starts:
 - API: http://localhost:8000
-- Postgres: localhost:5433 (db=utsavam_dev, user=utsavam, pass=utsavam_pass)
+- Postgres: localhost:5432 (db=utsavam_dev, user=utsavam, pass=utsavam_pass)
 - Redis: localhost:6379
 
 ---
@@ -189,29 +188,11 @@ docker exec -it utsavam-redis redis-cli SET "event:1:tokens" 5
 ```
 
 ---
-
-## 11. Deployment
-
-- Live API base URL: <add your deployed URL here>
-- Swagger UI (live): <add link>
-- Video walkthrough: <add link>
-
-Suggested platform: Render/Railway/Heroku with managed Postgres & Redis.
-
-Start command:
-
-```
-uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
-```
-
-Run migrations on first deploy:
-
 ```bash
 alembic upgrade head
 ```
 
 ---
-
 ✅ At this point:
 
 * You can browse events via Swagger.
