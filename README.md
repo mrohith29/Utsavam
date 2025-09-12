@@ -6,6 +6,8 @@ A scalable backend for **Utsavam**, an event ticketing platform built with moder
 
 - [Overview](#overview)
 - [Features](#features)
+- [High-Level Architecture Diagram](#high-level-architecture-diagram)
+- [ER Diagram](#er-diagram)
 - [Tech Stack](#tech-stack)
 - [Quick Start with Docker](#quick-start-with-docker)
 - [Manual Setup](#manual-setup)
@@ -37,6 +39,13 @@ Utsavam is a robust event ticketing platform that provides:
 - **Async Operations**: Full async/await support for better performance
 - **Database Migrations**: Alembic for schema versioning
 - **API Documentation**: Auto-generated OpenAPI/Swagger documentation
+---
+
+## High-Level Architecture Diagram
+![Architecture Diagram](High-Level%20Architecture%20Diagram.png)
+---
+## ER Diagram
+![ER Diagram](db_schema.png)
 
 ## 🛠 Tech Stack
 
@@ -235,6 +244,7 @@ python -m pytest tests/
 
 - **OpenAPI Specification**: [docs/OPENAPI.yaml](https://github.com/mrohith29/Utsavam/blob/main/docs/OPENAPI.yaml)
 - **Database Schema**: [docs/SCHEMA.sql](https://github.com/mrohith29/Utsavam/blob/main/docs/SCHEMA.sql)
+
 
 ---
 
