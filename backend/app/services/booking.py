@@ -25,7 +25,7 @@ async def create_booking(session: AsyncSession, user_id: int, event_id: int,
                 await session.rollback()
             except Exception:
                 pass
-            return existing  # return early: idempotent
+            raise HTTPException(status_code=409, detail="Booking with this idempotency key already exists, Please change the `idempotency_key` value")
 
     # Optionally attempt Redis token bucket fast path.
     # None -> missing key or error; fall back to DB.
