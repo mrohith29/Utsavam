@@ -83,18 +83,7 @@ Components:
 - Alembic migrations
 
 Diagram (Mermaid):
-```mermaid
-flowchart LR
-  Client((Clients)) --> API[FastAPI]
-  Admin((Admins)) --> API
-  API -- asyncpg --> PG[(PostgreSQL)]
-  API -- redis.asyncio --> REDIS[(Redis)]
-  subgraph Data Plane
-    PG
-    REDIS
-  end
-  API -->|OpenAPI/Swagger| Docs[Swagger UI]
-```
+![](https://github.com/mrohith29/Utsavam/blob/main/High-Level%20Architecture%20Diagram.png)
 
 ## Scalability Strategy
 - Horizontal API scaling: stateless FastAPI instances behind a load balancer.
