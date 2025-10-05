@@ -10,13 +10,12 @@ A scalable backend for **Utsavam**, an event ticketing platform built with moder
 - [ER Diagram](#er-diagram)
 - [Tech Stack](#tech-stack)
 - [Quick Start with Docker](#quick-start-with-docker)
-- [Manual Setup](#manual-setup)
 - [API Documentation](#api-documentation)
 - [Testing](#testing)
 - [Useful Commands](#useful-commands)
 - [Documentation](#documentation)
 
-## 🎯 Overview
+# Overview
 
 Utsavam is a robust event ticketing platform that provides:
 
@@ -25,7 +24,7 @@ Utsavam is a robust event ticketing platform that provides:
 - **Concurrency Safety**: PostgreSQL row locks and Redis token bucket to prevent overselling
 - **Scalable Architecture**: Built with async/await patterns for high performance
 
-## ✨ Features
+# Features
 
 ### Core Functionality
 - **Event Management**: Create, update, and manage events with capacity limits
@@ -47,7 +46,7 @@ Utsavam is a robust event ticketing platform that provides:
 ## ER Diagram
 ![ER Diagram](db_schema.png)
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Backend**: FastAPI, SQLAlchemy (async)
 - **Database**: PostgreSQL with asyncpg driver
@@ -56,7 +55,7 @@ Utsavam is a robust event ticketing platform that provides:
 - **Server**: Uvicorn
 - **Containerization**: Docker & Docker Compose
 
-## 🐳 Quick Start with Docker
+##  Quick Start with Docker
 
 ### Prerequisites
 - [Docker](https://www.docker.com/) and Docker Compose
@@ -144,7 +143,7 @@ export REDIS_URL="redis://localhost:6379/0"
 export ADMIN_KEY="change_me_admin_key"
 ```
 
-## 📚 API Documentation
+# API Documentation
 
 ### Public Endpoints
 
@@ -192,7 +191,7 @@ POST /bookings
 }
 ```
 
-## 🧪 Testing
+# Testing
 
 ### Concurrency Testing
 Test the system's ability to handle concurrent bookings:
@@ -208,7 +207,7 @@ total: 50 success: 5 conflict: 45 errors: 0
 
 This test simulates 50 concurrent booking requests and verifies that only 5 succeed (matching the event capacity), with the rest properly rejected due to conflicts.
 
-## 🔍 Useful Commands
+# Useful Commands
 
 ### Database Operations
 ```bash
@@ -240,7 +239,7 @@ alembic revision --autogenerate -m "description"
 python -m pytest tests/
 ```
 
-## 📖 Documentation
+## Documentation
 
 - **OpenAPI Specification**: [docs/OPENAPI.yaml](https://github.com/mrohith29/Utsavam/blob/main/docs/OPENAPI.yaml)
 - **Database Schema**: [docs/SCHEMA.sql](https://github.com/mrohith29/Utsavam/blob/main/docs/SCHEMA.sql)
@@ -248,7 +247,7 @@ python -m pytest tests/
 
 ---
 
-## ✅ Getting Started Checklist
+## Getting Started Checklist
 
 - [ ] Docker services running (`docker compose up --build`)
 - [ ] Environment variables configured
